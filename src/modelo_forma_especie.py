@@ -224,6 +224,43 @@ def analisis_procrustes_generalizado(lista_landmarks, iteraciones=5):
 # 4. MODELO PCA DE VARIACION DE FORMA
 # ==============================================================
 
+def detectar_valores_atipicos(formas_alineadas, promedio, nombres=None, factor_std=2.0):
+    """
+    Compara cada forma alineada contra el promedio y calcula que
+    tan lejos esta (distancia RMS punto a punto). Muestras con
+    artefactos de extraccion (lineas espurias, peciolo mal
+    segmentado, hoja doblada) suelen quedar muy por encima del
+    resto en esta distancia.
+
+    Retorna una lista de dicts ordenada de mas a menos sospechosa:
+        [{"nombre": ..., "distancia": ..., "atipico": True/False}, ...]
+    """
+    if nombres is None:
+        nombres = [f"muestra_{i}" for i in range(len(formas_alineadas))]
+
+    distancias = [
+        float(np.sqrt(np.mean((f - promedio) ** 2)))
+        for f in formas_alineadas
+    ]
+
+    media = np.mean(distancias)
+    desviacion = np.std(distancias)
+    umbral = media + factor_std * desviacion
+
+    resultado = [
+        {
+            "nombre": nombre,
+            "distancia": round(dist, 2),
+            "atipico": bool(dist > umbral),
+        }
+        for nombre, dist in zip(nombres, distancias)
+    ]
+
+    resultado.sort(key=lambda r: r["distancia"], reverse=True)
+
+    return resultado
+
+
 def construir_modelo_pca(formas_alineadas, n_componentes=6):
     """
     Convierte cada forma alineada (N, 2) en un vector (2N,),
@@ -303,9 +340,15 @@ def entrenar_especie(nombre_especie, archivos_silueta, n_por_lado=100,
         landmarks_todas
     )
 
+    nombres_archivos = [os.path.basename(a) for a in archivos_silueta]
+    reporte_atipicos = detectar_valores_atipicos(
+        formas_alineadas, promedio, nombres=nombres_archivos
+    )
+
     modelo = construir_modelo_pca(formas_alineadas, n_componentes=n_componentes)
     modelo["especie"] = nombre_especie
     modelo["n_muestras_entrenamiento"] = len(archivos_silueta)
+    modelo["reporte_calidad"] = reporte_atipicos
 
     os.makedirs(carpeta_modelos, exist_ok=True)
     ruta_modelo = os.path.join(carpeta_modelos, f"{nombre_especie}.json")
@@ -313,7 +356,7 @@ def entrenar_especie(nombre_especie, archivos_silueta, n_por_lado=100,
     with open(ruta_modelo, "w", encoding="utf-8") as f:
         json.dump(modelo, f, ensure_ascii=False, indent=2)
 
-    return modelo, ruta_modelo
+    return modelo, ruta_modelo, reporte_atipicos
 
 
 def generar_hoja_de_especie(nombre_especie, carpeta_modelos="modelos",

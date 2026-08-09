@@ -107,13 +107,22 @@ def main():
             continue
 
         try:
-            modelo, ruta = entrenar_especie(
+            modelo, ruta, reporte = entrenar_especie(
                 nombre_especie,
                 archivos,
                 n_por_lado=args.n_por_lado,
                 carpeta_modelos=args.modelos,
             )
             print(f"-> modelo guardado en {ruta}")
+
+            atipicas = [r for r in reporte if r["atipico"]]
+
+            if atipicas:
+                print(f"  ATENCION: {len(atipicas)} muestra(s) lucen distintas al resto:")
+                for r in atipicas:
+                    print(f"    - {r['nombre']}  (distancia: {r['distancia']}, "
+                          f"normal: ~{round(sum(x['distancia'] for x in reporte)/len(reporte), 2)})")
+                print(f"    Revisa estos archivos con visualizar.py antes de confiar en el modelo.")
 
         except Exception as error:
             print(f"[ERROR: {error}]")
