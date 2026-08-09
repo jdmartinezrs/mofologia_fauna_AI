@@ -37,9 +37,7 @@ dist/
 # SALIDAS GENERADAS POR LOS SCRIPTS
 # ==============================================================
 
-vista_previas/
-hojas_generadas/*.json
-modelos/*.json
+
 
 # ==============================================================
 # FOTOS ORIGINALES
