@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "1) Extractor de siluetas (desde foto)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/extractor_siluetas.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/fotos_procesadas"
+        },
+        {
+            "name": "2) Entrenar todos los modelos por especie",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/entrenar_todo.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--carpeta", "fotos_procesadas", "--modelos", "modelos"]
+        },
+        {
+            "name": "3) Generar hoja (pide especie por input)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/generar.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--listar"]
+        },
+        {
+            "name": "Generador parametrico (hoja sintetica de prueba)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/generador_hojas_parametrico.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
