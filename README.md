@@ -74,3 +74,9 @@ dataset_hojas/
 - Una hoja por foto, extendida y plana, fondo liso.
 - Si el peciolo (tallito) queda muy largo en el recorte, la detección
   automática de ápice/base puede confundirse — recórtalo si es posible.
+
+1.python src/extractor_siluetas.py
+
+2.python src/entrenar_todo.py
+
+3.python src/convertir_a_maxscript.py fotos_procesadas/euphorbia_lactea/Euphorbia01_silueta.py euphorbia_3d.ms --tolerancia 1.0 --extrusion 20 --nombre "Euphorbia_3D"

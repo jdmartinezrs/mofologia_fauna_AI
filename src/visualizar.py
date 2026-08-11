@@ -49,9 +49,36 @@ def cargar_puntos(ruta_archivo):
     with open(ruta_archivo, encoding="utf-8") as f:
         contenido = f.read()
 
-    pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", contenido)
-    puntos = [[float(x), float(y)] for x, y in pares]
-    return puntos, os.path.basename(ruta_archivo)
+    bloques = re.split(r"# Tipo:\s*(\w+)", contenido)
+
+    if len(bloques) < 3:
+        pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", contenido)
+        return [[float(x), float(y)] for x, y in pares], os.path.basename(ruta_archivo)
+
+    candidatos_exterior = []
+
+    for i in range(1, len(bloques), 2):
+        tipo = bloques[i]
+        texto_bloque = bloques[i + 1]
+
+        if tipo != "EXTERIOR":
+            continue
+
+        cierre = texto_bloque.find("]")
+        texto_puntos = texto_bloque[:cierre] if cierre != -1 else texto_bloque
+
+        pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", texto_puntos)
+        puntos = [[float(x), float(y)] for x, y in pares]
+
+        if puntos:
+            candidatos_exterior.append(puntos)
+
+    if not candidatos_exterior:
+        pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", contenido)
+        return [[float(x), float(y)] for x, y in pares], os.path.basename(ruta_archivo)
+
+    candidatos_exterior.sort(key=len, reverse=True)
+    return candidatos_exterior[0], os.path.basename(ruta_archivo)
 
 
 # ==============================================================
@@ -157,7 +184,9 @@ def main():
             return
 
         if args.cuadricula:
-            ruta = visualizar_cuadricula(archivos, args.salida)
+            nombre_carpeta = os.path.basename(os.path.normpath(args.entrada))
+            nombre_salida = f"cuadricula_{nombre_carpeta}.png"
+            ruta = visualizar_cuadricula(archivos, args.salida, nombre_salida)
             print(f"Cuadricula generada: {ruta}")
         else:
             for archivo in archivos:

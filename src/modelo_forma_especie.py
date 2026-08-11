@@ -60,12 +60,60 @@ import numpy as np
 # ==============================================================
 
 def extraer_puntos(ruta_archivo):
+    """
+    Lee un archivo *_silueta.py y devuelve SOLO los puntos del
+    contorno EXTERIOR (la silueta general de la hoja/planta).
+
+    Importante: cuando la foto genera huecos interiores (comun en
+    hojas con perforaciones, o en plantas como suculentas/cactus
+    con texturas que el umbral confunde con huecos), el archivo
+    trae VARIOS bloques de coordenadas (EXTERIOR + HUECO + DETALLE).
+    Si se mezclan todos, la forma queda corrupta. Por eso se
+    identifica cada bloque por su comentario "# Tipo: ..." y se
+    usa unicamente el EXTERIOR mas grande.
+    """
     with open(ruta_archivo, encoding="utf-8") as f:
         contenido = f.read()
 
-    pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", contenido)
-    puntos = np.array([[float(x), float(y)] for x, y in pares])
-    return puntos
+    # Dividir el archivo en bloques, cada uno empieza con "# Tipo: X"
+    bloques = re.split(r"# Tipo:\s*(\w+)", contenido)
+
+    # re.split con grupo de captura devuelve:
+    # [texto_antes, tipo1, texto1, tipo2, texto2, ...]
+    if len(bloques) < 3:
+        # archivo sin ese formato de comentarios (ej. generado a mano
+        # o por el generador parametrico) -> usar todo el archivo
+        pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", contenido)
+        return np.array([[float(x), float(y)] for x, y in pares])
+
+    candidatos_exterior = []
+
+    for i in range(1, len(bloques), 2):
+        tipo = bloques[i]
+        texto_bloque = bloques[i + 1]
+
+        if tipo != "EXTERIOR":
+            continue
+
+        # cortar el bloque en el siguiente "]" de cierre de la lista
+        # de puntos, para no arrastrar contornos de mas adelante
+        cierre = texto_bloque.find("]")
+        texto_puntos = texto_bloque[:cierre] if cierre != -1 else texto_bloque
+
+        pares = re.findall(r"\(([-\d.]+),\s*([-\d.]+)\)", texto_puntos)
+        puntos = np.array([[float(x), float(y)] for x, y in pares])
+
+        if len(puntos) > 0:
+            candidatos_exterior.append(puntos)
+
+    if not candidatos_exterior:
+        raise ValueError(
+            f"No se encontro un contorno EXTERIOR valido en {ruta_archivo}"
+        )
+
+    # si hubiera mas de un EXTERIOR (no deberia pasar), usar el mas grande
+    candidatos_exterior.sort(key=len, reverse=True)
+    return candidatos_exterior[0]
 
 
 # ==============================================================
